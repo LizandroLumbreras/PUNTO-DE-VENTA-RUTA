@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>POS – Ruta de Venta</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root{
+      --azul:#00416A; --resalte:#0c6cbd; --ok:#1e8e3e; --bg-grad:linear-gradient(to right,#00416A,#E4E5E6);
+      --card: rgba(255,255,255,.9); --muted:rgba(0,0,0,.55); --shadow:0 6px 18px rgba(0,0,0,.18);
+      --radius:14px; --radius-sm:10px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:'Poppins',system-ui,Arial; color:#111; background:var(--bg-grad);
+      display:flex; flex-direction:column; -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;
+    }
+
+    header{
+      position:sticky; top:0; z-index:50;
+      background:rgba(0,0,0,.6);
+      color:#fff;
+      padding:10px 14px;
+      display:flex; justify-content:center; align-items:center; gap:8px;
+      font-weight:700; font-size:18px;
+      backdrop-filter:saturate(120%) blur(4px);
+      height:50px;
+    }
+    header img{ height:75px; object-fit:contain; }
+
+    .wrap{flex:1; padding:12px; display:flex; flex-direction:column; gap:12px; max-width:720px; margin:0 auto}
+
+    .controls{ display:flex; flex-direction:column; gap:10px; }
+    .field{
+      display:flex; gap:8px; background:rgba(255,255,255,.12); padding:10px; border-radius:var(--radius-sm);
+      align-items:center; backdrop-filter:blur(2px);
+    }
+    .field label{min-width:78px; color:#fff; font-size:13px}
+    .field input{ flex:1; padding:10px 12px; border:none; border-radius:8px; font-size:15px; background:#fff; outline:none; }
+
+    /* Buscador */
+    .searchbox{ position:relative; z-index:300; }
+    .search-results{
+      position:absolute; left:90px; right:10px; top:calc(100% + 6px);
+      background:#fff; border-radius:12px; box-shadow:var(--shadow);
+      max-height:260px; overflow:auto; display:none; z-index:310;
+    }
+    .result-item{ padding:10px 12px; cursor:pointer; display:flex; justify-content:space-between; gap:8px }
+    .result-item small{ color:var(--muted) }
+    .result-item:hover{ background:#f2f4f7 }
+
+    .card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+
+    /* Tabla */
+    .table-wrap{ max-height:260px; overflow:auto; }
+    table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+    thead th{ background:var(--azul); color:#fff; padding:10px; font-size:13px; position:sticky; top:0; z-index:100; }
+    thead th:nth-child(1){ width:55%; text-align:left; }
+    thead th:nth-child(2){ width:15%; text-align:center; }
+    thead th:nth-child(3){ width:20%; text-align:right; }
+    thead th:nth-child(4){ width:10%; text-align:center; }
+    td.del-col{ text-align:center; }
+    td.del-col .del{
+      background:#e74c3c; color:#fff; border:none; border-radius:50%;
+      width:22px; height:22px; font-size:14px; line-height:20px; cursor:pointer;
+    }
+    td.del-col .del:hover{ background:#c0392b; }
+
+    .totals{ display:flex; flex-direction:column; gap:6px; padding:12px 14px; background:#fff; }
+    .row{ display:flex; justify-content:space-between; align-items:center; font-size:15px }
+    .row.muted{ color:var(--muted) }
+    .row.big{ font-weight:700; font-size:18px }
+
+    .actions{ padding:6px 0 12px }
+    .btn{
+      width:100%; border:none; padding:14px; border-radius:12px; font-size:18px; font-weight:700; color:#fff;
+      background:linear-gradient(180deg,var(--resalte),#094d85); box-shadow:var(--shadow); cursor:pointer;
+    }
+    .btn:active{ transform:translateY(1px) }
+    #btnCorte{ background:linear-gradient(180deg,#1e8e3e,#146329); margin-top:10px; }
+
+    /* Pantalla de login */
+    #loginScreen{
+      display:flex; flex-direction:column; gap:12px; align-items:center; justify-content:center;
+      height:100vh; background:#00416A; color:#fff;
+    }
+    #loginScreen input{padding:10px; border-radius:8px; border:none; font-size:16px;}
+    #loginMsg{color:#ffbaba; font-size:14px;}
+  </style>
+</head>
+<body>
+
+<!-- ====== LOGIN ====== -->
+<div id="loginScreen">
+  <h2>Acceso Ruta de Venta</h2>
+  <input id="loginUsuario" type="text" placeholder="Usuario">
+  <input id="loginPassword" type="password" placeholder="Contraseña">
+  <button id="btnLogin" class="btn" style="width:auto;">Entrar</button>
+  <p id="loginMsg"></p>
+</div>
+
+<!-- ====== APP POS ====== -->
+<div id="posApp" style="display:none;">
+  <header>
+    <span>POS – Ruta de Venta</span>
+    <img src="logo_proveedora.webp" alt="Logo">
+  </header>
+
+  <main class="wrap">
+    <!-- Controles principales -->
+    <section class="controls">
+      <div class="field">
+        <label>Cliente</label>
+        <input id="cliente" list="clientesList" type="text" placeholder="Nombre del cliente"/>
+        <datalist id="clientesList"></datalist>
+      </div>
+      <div class="field searchbox">
+        <label>Buscar</label>
+        <input id="buscador" type="text" placeholder="Escribe o escanea código…">
+        <div id="resultados" class="search-results"></div>
+      </div>
+      <div class="field">
+        <label>Cantidad</label>
+        <input id="cantidadInput" type="number" step="0.01" min="0.01" value="1">
+      </div>
+    </section>
+
+    <!-- Tabla -->
+    <section class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Producto</th><th>Cant.</th><th>Importe</th><th></th></tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="totals">
+        <div class="row muted"><span>Subtotal</span><span id="lblSubtotal">$0.00</span></div>
+        <div class="row muted"><span>Impuestos</span><span id="lblImpuestos">$0.00</span></div>
+        <div class="row big"><span>Total</span><span id="lblTotal">$0.00</span></div>
+      </div>
+    </section>
+
+    <!-- Acciones -->
+    <section class="actions">
+      <button class="btn" id="btnCobrar">Cobrar</button>
+      <button class="btn" id="btnCorte">Corte del día</button>
+    </section>
+  </main>
+</div>
+
+<!-- ====== FIREBASE & APP ====== -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, query, where, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// 🔹 Configuración Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
+  authDomain: "inventariopv-643f1.firebaseapp.com",
+  projectId: "inventariopv-643f1",
+  storageBucket: "inventariopv-643f1.appspot.com",
+  messagingSenderId: "96242533231",
+  appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let USUARIO_LOGUEADO = null; // guardará al usuario logueado
+const $ = (s)=>document.querySelector(s);
+
+// ====== LOGIN ======
+async function loginUsuario(){
+  const user = $("#loginUsuario").value.trim();
+  const pass = $("#loginPassword").value.trim();
+  const msg = $("#loginMsg");
+
+  msg.textContent = "Verificando...";
+
+  try {
+    const ref = collection(db,"usuarios_ruta");
+    const q = query(ref, where("usuario","==",user), where("password","==",pass), where("activo","==",true));
+    const snap = await getDocs(q);
+
+    if(snap.empty){ msg.textContent="Usuario o contraseña incorrectos"; return; }
+
+    const u = snap.docs[0].data();
+    USUARIO_LOGUEADO = { id: snap.docs[0].id, ...u };
+
+    // Mostrar app
+    $("#loginScreen").style.display="none";
+    $("#posApp").style.display="block";
+
+    console.log("✅ Logueado:", USUARIO_LOGUEADO);
+  }catch(err){
+    console.error(err);
+    msg.textContent="Error al conectar con base de datos";
+  }
+}
+$("#btnLogin").addEventListener("click",loginUsuario);
+
+// ====== DEMO COBRAR ======
+$("#btnCobrar").addEventListener("click", async()=>{
+  if(!USUARIO_LOGUEADO){ alert("No hay usuario logueado"); return; }
+
+  const venta = {
+    cliente: $("#cliente").value || "Mostrador",
+    total: 123.45,
+    fecha: serverTimestamp(),
+    atendio: USUARIO_LOGUEADO.nombre,
+    usuario: {
+      id: USUARIO_LOGUEADO.id,
+      usuario: USUARIO_LOGUEADO.usuario,
+      rol: USUARIO_LOGUEADO.rol,
+      rutaId: USUARIO_LOGUEADO.rutaId
+    }
+  };
+
+  await addDoc(collection(db,"rutas_venta",USUARIO_LOGUEADO.rutaId,"ventas"),venta);
+  alert("Venta registrada por: " + USUARIO_LOGUEADO.nombre);
+});
+</script>
+</body>
+</html>
