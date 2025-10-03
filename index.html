@@ -304,6 +304,96 @@
       req.onerror   = () => reject(req.error);
     });
   }
+// Generador de folios para cortes por usuario
+async function getNextFolioCorte(db, rutaId, usuarioId){
+  const ref = doc(db, "consecutivos_cortes", `${rutaId}_${usuarioId}`);
+  const folio = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) {
+      tx.set(ref, { valor: 1, actualizado: serverTimestamp() });
+      return 1;
+    }
+    const actual = Number(snap.data().valor || 0) + 1;
+    tx.update(ref, { valor: actual, actualizado: serverTimestamp() });
+    return actual;
+  });
+  return `C-${usuarioId}-${String(folio).padStart(4,"0")}`;
+}
+
+async function corteDelDia(){
+  if(!USUARIO_LOGUEADO){alert("No logueado");return;}
+
+  const hoy=new Date();
+  const inicio=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),0,0,0);
+  const fin=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),23,59,59);
+
+  const ventasRef=collection(db,"rutas_venta",rutaId,"ventas");
+  const qv=query(
+    ventasRef,
+    where("fecha",">=",Timestamp.fromDate(inicio)),
+    where("fecha","<=",Timestamp.fromDate(fin)),
+    where("atendio","==",USUARIO_LOGUEADO.nombre)
+  );
+  const snap=await getDocs(qv);
+
+  let subtotal=0, impuestos=0, total=0, count=0;
+  snap.forEach(d=>{
+    const v=d.data();
+    subtotal += v.subtotal || 0;
+    impuestos += v.impuestos || 0;
+    total    += v.total || 0;
+    count++;
+  });
+
+  // Folio
+  const folioCorte = await getNextFolioCorte(db, rutaId, USUARIO_LOGUEADO.id);
+
+  // Guardar en Firestore
+  const corte = {
+    folio: folioCorte,
+    fecha: serverTimestamp(),
+    fecha_txt: hoy.toLocaleString(),
+    rutaId: rutaId,
+    usuarioId: USUARIO_LOGUEADO.id,
+    vendedor: USUARIO_LOGUEADO.nombre,
+    ventas: count,
+    subtotal: +subtotal.toFixed(2),
+    impuestos: +impuestos.toFixed(2),
+    total: +total.toFixed(2)
+  };
+  try {
+    const refCortes = collection(db,"rutas_venta",rutaId,"cortes");
+    await addDoc(refCortes, corte);
+    console.log("✅ Corte guardado:", folioCorte);
+
+    // Enviar reporte a Telegram
+    await enviarReporteTelegram(folioCorte, count, subtotal, impuestos, total);
+  } catch(err) {
+    console.error("❌ Error guardando corte:", err);
+  }
+
+  // Imprimir ticket de corte
+  const ticketArea=document.getElementById('ticketArea');
+  const t=document.getElementById('ticket');
+  t.innerHTML=`
+    <div style="text-align:center;font-weight:700">📊 CORTE DEL DÍA</div>
+    <div style="text-align:center">${hoy.toLocaleDateString()}</div>
+    <hr>
+    <div>Folio Corte: ${folioCorte}</div>
+    <div>Vendedor: ${USUARIO_LOGUEADO.nombre}</div>
+    <div>Ventas: ${count}</div>
+    <hr>
+    <div>Subtotal: $${subtotal.toFixed(2)}</div>
+    <div>Impuestos: $${impuestos.toFixed(2)}</div>
+    <div style="font-weight:700">Total: $${total.toFixed(2)}</div>
+    <hr>
+    <div style="text-align:center;font-size:12px;">Fin de corte</div>
+  `;
+
+  ticketArea.style.top="0"; ticketArea.style.left="0";
+  window.print();
+  ticketArea.style.top="-9999px"; ticketArea.style.left="-9999px";
+}
 
   async function borrarVentaPendiente(folio) {
     const db = await openLocalDB();
@@ -628,46 +718,30 @@ function imprimirTicketEstilado(){
   document.getElementById('btnCobrar').onclick=abrirCobro;
   document.getElementById('btnCancelarCobro').onclick=cerrarCobro;
   document.getElementById('btnConfirmarCobro').onclick=confirmarCobro;
-  // ==== Corte del día ====
-  async function corteDelDia(){
-    if(!USUARIO_LOGUEADO){alert("No logueado");return;}
-
-    const hoy=new Date();
-    const inicio=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),0,0,0);
-    const fin=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),23,59,59);
-
-    const ventasRef=collection(db,"rutas_venta",rutaId,"ventas");
-    const qv=query(
-      ventasRef,
-      where("fecha",">=",Timestamp.fromDate(inicio)),
-      where("fecha","<=",Timestamp.fromDate(fin)),
-      where("atendio","==",USUARIO_LOGUEADO.nombre)
-    );
-    const snap=await getDocs(qv);
-
-    let total=0, count=0;
-    snap.forEach(d=>{ total+=d.data().total||0; count++; });
-
-    alert(`📊 Corte del día\nVendedor: ${USUARIO_LOGUEADO.nombre}\nVentas: ${count}\nTotal: $${total.toFixed(2)}`);
-
-    // Enviar reporte a Telegram (opcional)
-    enviarReporteTelegram(count,total);
-  }
-  $("#btnCorte").onclick=corteDelDia;
 
   // ==== Telegram ====
-  async function enviarReporteTelegram(ventas,total){
-    try{
-      const token="TU_TOKEN_TELEGRAM";
-      const chatId="TU_CHAT_ID";
-      const mensaje=`📊 Corte del día\n👤 ${USUARIO_LOGUEADO.nombre}\n🛒 Ventas: ${ventas}\n💵 Total: $${total.toFixed(2)}`;
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({chat_id:chatId,text:mensaje})
-      });
-    }catch(e){ console.error("Error enviando a Telegram:",e);}
+async function enviarReporteTelegram(folio, ventas, subtotal, impuestos, total){
+  try{
+    const token  = "8272633411:AAE6uKTpEtPW--IPk6ufix_CDGJ0dH6ru4Q";
+    const chatId = "6617988297";
+    const mensaje =
+`📊 CORTE DEL DÍA
+🧾 Folio: ${folio}
+👤 Vendedor: ${USUARIO_LOGUEADO.nombre}
+🛒 Ventas: ${ventas}
+💵 Subtotal: $${subtotal.toFixed(2)}
+💰 Impuestos: $${impuestos.toFixed(2)}
+✅ Total: $${total.toFixed(2)}`;
+
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({chat_id:chatId,text:mensaje})
+    });
+  }catch(e){
+    console.error("Error enviando a Telegram:",e);
   }
+}
     // === CÁMARA / ESCÁNER ===
   const btnCam = document.getElementById("btnCam");
 
