@@ -176,12 +176,15 @@ $("#buscador").addEventListener("keydown", e => {
   if(e.key === "Enter"){
     const val = $("#buscador").value.trim().toLowerCase();
 
-    let resultados = catalogo.filter(p => {
-      const nombre = (p.nombre || "").toLowerCase();
-      const codigo = (p.codigo || "").toLowerCase();
-      return nombre.includes(val) || codigo.includes(val);
-    });
+let resultados = catalogo.filter(p => (p.codigo || "").toLowerCase() === val);
 
+if(resultados.length === 0){
+  resultados = catalogo.filter(p => {
+    const nombre = (p.nombre || "").toLowerCase();
+    const codigo = (p.codigo || "").toLowerCase();
+    return nombre.includes(val) || codigo.includes(val);
+  });
+}
     if(resultados.length > 0){
       resultados.forEach(prod=>{
         const existente = carrito.find(p=>p.nombre===prod.nombre);
