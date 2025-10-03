@@ -176,10 +176,11 @@ $("#buscador").addEventListener("keydown", e => {
   if(e.key === "Enter"){
     const val = $("#buscador").value.trim().toLowerCase();
 
-    // Buscar todos los productos que coincidan con nombre o código
-    let resultados = catalogo.filter(
-      p => p.nombre.toLowerCase().includes(val) || p.codigo === val
-    );
+    let resultados = catalogo.filter(p => {
+      const nombre = (p.nombre || "").toLowerCase();
+      const codigo = (p.codigo || "").toLowerCase();
+      return nombre.includes(val) || codigo.includes(val);
+    });
 
     if(resultados.length > 0){
       resultados.forEach(prod=>{
@@ -200,32 +201,6 @@ $("#buscador").addEventListener("keydown", e => {
   }
 });
 
-// ==== Cobrar venta ====
-$("#btnCobrar").onclick=async()=>{
-  if(!USUARIO_LOGUEADO){alert("No logueado");return;}
-  if(carrito.length===0){alert("Agrega productos");return;}
-
-  const folio = await getNextFolio(USUARIO_LOGUEADO.rutaId);
-
-  const venta={
-    folio,
-    cliente:$("#cliente").value||"Mostrador",
-    detalle:carrito,
-    total:carrito.reduce((s,i)=>s+i.importe,0),
-    fecha:serverTimestamp(),
-    atendio:USUARIO_LOGUEADO.nombre,
-    usuario:{
-      id:USUARIO_LOGUEADO.id,
-      usuario:USUARIO_LOGUEADO.usuario,
-      rol:USUARIO_LOGUEADO.rol,
-      rutaId:USUARIO_LOGUEADO.rutaId
-    }
-  };
-
-  await addDoc(collection(db,"rutas_venta",USUARIO_LOGUEADO.rutaId,"ventas"),venta);
-  alert(`✅ Venta ${folio} registrada por ${USUARIO_LOGUEADO.nombre}`);
-  carrito=[]; render();
-};
 
 // ==== Corte del día ====
 async function corteDelDia(){
