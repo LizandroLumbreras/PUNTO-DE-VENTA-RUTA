@@ -41,7 +41,8 @@
   <main class="wrap">
     <div class="card">
       <label>Cliente</label>
-      <input id="cliente" type="text" placeholder="Nombre del cliente"/>
+     <input id="cliente" list="clientesList" type="text" placeholder="Nombre del cliente"/>
+<datalist id="clientesList"></datalist>
     </div>
     <div class="card">
       <label>Buscar producto</label>
@@ -62,10 +63,28 @@
     </div>
   </main>
 </div>
-
+  
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { 
+  initializeApp 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import { 
+  getFirestore, collection, getDocs, query, where, addDoc, 
+  serverTimestamp, runTransaction, doc, Timestamp 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+async function getNextFolio(rutaId){
+  const ref = doc(db,"consecutivos",rutaId);
+  const folio = await runTransaction(db,async(tx)=>{
+    const snap = await tx.get(ref);
+    if(!snap.exists()){ tx.set(ref,{valor:1}); return 1; }
+    const val=(snap.data().valor||0)+1;
+    tx.update(ref,{valor:val});
+    return val;
+  });
+  return `V-${String(folio).padStart(6,"0")}`;
+}
 
 const firebaseConfig = {
   apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
@@ -81,6 +100,47 @@ const db = getFirestore(app);
 let USUARIO_LOGUEADO=null;
 let carrito=[];
 const $=s=>document.querySelector(s);
+  
+  // ==== Catálogo de productos desde Firestore ====
+let catalogo=[]; 
+const codeIndex=new Map();
+
+async function cargarCatalogo(){
+  catalogo=[]; codeIndex.clear();
+  const snap=await getDocs(collection(db,"productos"));
+  snap.forEach(d=>{
+    const x=d.data();
+    if(x.activo===false) return;
+    const prod={
+      id:d.id,
+      nombre:x.concepto||"SIN NOMBRE",
+      codigo:(x.codigoBarra||"").toString(),
+      precio:Number(x.precioPublico||0)
+    };
+    catalogo.push(prod);
+    if(prod.codigo) codeIndex.set(prod.codigo,prod.id);
+  });
+}
+
+// cargar catálogo al inicio
+(async()=>{ await cargarCatalogo(); })();
+  
+  // ==== Clientes ====
+async function cargarClientes(){
+  const dl=document.getElementById("clientesList");
+  dl.innerHTML="";
+  const snap=await getDocs(collection(db,"clientes"));
+  snap.forEach(d=>{
+    const c=d.data();
+    if(c.activo===false) return;
+    const opt=document.createElement("option");
+    opt.value=c.nombre;
+    dl.appendChild(opt);
+  });
+}
+
+(async()=>{ await cargarClientes(); })();
+
 
 async function loginUsuario(){
   const u=$("#loginUsuario").value.trim(), p=$("#loginPassword").value.trim();
@@ -110,17 +170,35 @@ function render(){
   $("#lblTotal").textContent="$"+total.toFixed(2);
 }
 
-$("#buscador").addEventListener("keydown",e=>{
-  if(e.key==="Enter"){
-    carrito.push({nombre:$("#buscador").value,cantidad:1,importe:100});
-    $("#buscador").value=""; render();
+$("#buscador").addEventListener("keydown", e => {
+  if(e.key === "Enter"){
+    const val = $("#buscador").value.trim().toLowerCase();
+    let prod = catalogo.find(p=>p.nombre.toLowerCase()===val) || catalogo.find(p=>p.codigo===val);
+
+    if(prod){
+      const existente = carrito.find(p=>p.nombre===prod.nombre);
+      if(existente){
+        existente.cantidad += 1;
+        existente.importe = existente.cantidad * prod.precio;
+      } else {
+        carrito.push({nombre:prod.nombre,cantidad:1,importe:prod.precio});
+      }
+      render();
+    } else { 
+      alert("Producto no encontrado"); 
+    }
+    $("#buscador").value = "";
   }
 });
 
 $("#btnCobrar").onclick=async()=>{
   if(!USUARIO_LOGUEADO){alert("No logueado");return;}
   if(carrito.length===0){alert("Agrega productos");return;}
+
+  const folio = await getNextFolio(USUARIO_LOGUEADO.rutaId);
+
   const venta={
+    folio,
     cliente:$("#cliente").value||"Mostrador",
     detalle:carrito,
     total:carrito.reduce((s,i)=>s+i.importe,0),
@@ -133,12 +211,36 @@ $("#btnCobrar").onclick=async()=>{
       rutaId:USUARIO_LOGUEADO.rutaId
     }
   };
+
   await addDoc(collection(db,"rutas_venta",USUARIO_LOGUEADO.rutaId,"ventas"),venta);
-  alert("Venta registrada por "+USUARIO_LOGUEADO.nombre);
+  alert(`✅ Venta ${folio} registrada por ${USUARIO_LOGUEADO.nombre}`);
   carrito=[]; render();
 };
 
-$("#btnCorte").onclick=()=>{alert("Corte del día para "+USUARIO_LOGUEADO.nombre);};
+import { Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+async function corteDelDia(){
+  if(!USUARIO_LOGUEADO){alert("No logueado");return;}
+  
+  const hoy=new Date();
+  const inicio=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),0,0,0);
+  const fin=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),23,59,59);
+
+  const ventasRef=collection(db,"rutas_venta",USUARIO_LOGUEADO.rutaId,"ventas");
+  const q=query(
+  ventasRef,
+  where("fecha",">=",Timestamp.fromDate(inicio)),
+  where("fecha","<=",Timestamp.fromDate(fin)),
+  where("usuario.id","==",USUARIO_LOGUEADO.id)  // 👈 filtro por usuario
+);
+  const snap=await getDocs(q);
+
+  let total=0, count=0;
+  snap.forEach(d=>{ total+=d.data().total||0; count++; });
+
+  alert(`📊 Corte del día\nVendedor: ${USUARIO_LOGUEADO.nombre}\nVentas: ${count}\nTotal: $${total.toFixed(2)}`);
+}
+$("#btnCorte").onclick=corteDelDia;
 </script>
 </body>
 </html>
