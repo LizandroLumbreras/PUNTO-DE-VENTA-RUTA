@@ -116,76 +116,74 @@
     /* ==== Estilos de impresión del ticket ==== */
 @media print {
   body * {
-    visibility: hidden;   /* Oculta todo */
+    visibility: hidden;
   }
   #ticketArea, #ticketArea * {
-    visibility: visible;  /* Solo muestra ticket */
+    visibility: visible;
   }
-#ticketArea {
-  display: block !important;
-  position: relative !important;
-  inset: auto !important;
-  background: #fff;
-}
+  #ticketArea {
+    display: block !important;
+    position: relative !important;
+    inset: auto !important;
+    background: #fff;
+    margin: 0;
+    padding: 0;
+  }
 
   /* Ticket estilo recibo térmico */
-#ticket {
-  font-family: 'Poppins', sans-serif;
-  width: 100%;        /* ocupar todo el ancho disponible */
-  max-width: 80mm;    /* limitar a ancho real del rollo */
-  padding: 4px 0;     /* sin márgenes laterales extra */
-  font-size: 13px;
-  line-height: 1.5;
-  color: #000;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-  font-weight: 500;
-}
+  #ticket {
+    font-family: 'Poppins', sans-serif;
+    width: 80mm;              /* fuerza a 80mm exactos */
+    min-width: 80mm;
+    max-width: 80mm;
+    margin: 0;
+    padding: 0 2mm;            /* un ligero respiro lateral */
+    font-size: 13px;
+    line-height: 1.5;
+    color: #000;
+    font-weight: 600;          /* más claro y nítido */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 
-#ticket .t-header {
-  text-align: center;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-}
-#ticket .t-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  margin: 3px 0;
-}
-#ticket .t-totals {
-  margin-top: 6px;
-  font-weight: 700;
-}
-#ticket .t-thanks {
-  text-align: center;
-  margin-top: 10px;
-  font-size: 12px;
-  font-weight: 600;
-}
-#ticket hr {
-  border: none;
-  border-top: 1px dashed #000;
-  margin: 6px 0;
-  opacity: 0.9;
-}
+  #ticket .t-header {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
 
-#ticket .t-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  margin: 2px 0;
-}
+  #ticket .t-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin: 3px 0;
+    font-weight: 600;
+  }
 
-#ticket .t-totals {
-  margin-top: 6px;
-  font-weight: 700;
-}
-#ticket .t-thanks {
-  text-align: center;
-  margin-top: 10px;
-  font-size: 11px;
+  #ticket .t-totals {
+    margin-top: 6px;
+    font-weight: 700;
+  }
+
+  #ticket .t-thanks {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  #ticket hr {
+    border: none;
+    border-top: 1px dashed #000;
+    margin: 6px 0;
+    opacity: 0.9;
+  }
+
+  /* Quita botones o colores web */
+  button, .btn, header, .actions, #loginScreen {
+    display: none !important;
+  }
 }
 
 
