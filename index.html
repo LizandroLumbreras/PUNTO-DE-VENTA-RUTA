@@ -100,14 +100,11 @@
   #ticketArea, #ticketArea * {
     visibility: visible;  /* Solo muestra ticket */
   }
-  #ticketArea {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%;
-    padding: 0;
-    margin: 0;
-  }
-
+ #ticketArea {
+  position: fixed;
+  top: -9999px;   /* fuera de pantalla */
+  left: -9999px;
+}
   /* Ticket estilo recibo térmico */
   #ticket {
     font-family: monospace, 'Poppins', sans-serif;
@@ -572,10 +569,13 @@
 
 function imprimirTicketEstilado(){
   const ticket = document.getElementById('ticketArea');
-  ticket.style.display = 'block';     // mostrar antes de imprimir
+  ticket.style.top = "0"; 
+  ticket.style.left = "0"; 
   window.print();
-  ticket.style.display = 'none';      // ocultar otra vez después
+  ticket.style.top = "-9999px"; 
+  ticket.style.left = "-9999px";
 }
+
 
   // ==== Reimpresión ====
   const modalReimp=document.getElementById('modalReimp');
@@ -794,7 +794,7 @@ function imprimirTicketEstilado(){
     </div>
   </div>
     <!-- 🔹 Área Ticket Imprimible -->
-  <div id="ticketArea" style="display:none;">
+  <div id="ticketArea" style="position:fixed; top:-9999px; left:-9999px;">
     <div id="ticket" class="ticket" style="width:280px; font-family:'Poppins',sans-serif; font-size:14px; line-height:1.3; color:#000;">
       
       <!-- Encabezado -->
