@@ -288,7 +288,6 @@ import {
       rutaId = data.rutaId; // ruta depende del usuario
       $("#loginScreen").style.display="none"; $("#posApp").style.display="block";
       await cargarCatalogoDesdeFirestore();
-      await cargarClientes();
       render();
       await sincronizarVentasPendientes();
     }catch(e){ msg.textContent="Error de conexión"; console.error(e);}
