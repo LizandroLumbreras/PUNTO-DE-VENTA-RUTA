@@ -231,10 +231,11 @@
 </div>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getFirestore, collection, addDoc, setDoc, serverTimestamp, runTransaction, doc,
-    getDocs, getDoc, query, where, orderBy, Timestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getFirestore, collection, addDoc, setDoc, serverTimestamp, runTransaction, doc,
+  getDocs, getDoc, query, where, orderBy, Timestamp, limit   // 👈 agrega limit aquí
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 
   // ==== Configuración Firebase ====
   const firebaseConfig = {
@@ -258,6 +259,18 @@
   const $ = (s)=>document.querySelector(s);
 
   const elCliente=$('#cliente'), elBuscador=$('#buscador'), elCant=$('#cantidadInput');
+  elCliente.addEventListener("input", async ()=>{
+  const texto = elCliente.value.trim();
+  const sugerencias = await buscarClientesFirestore(texto);
+  const dl=document.getElementById("clientesList");
+  dl.innerHTML="";
+  sugerencias.forEach(cli=>{
+    const opt=document.createElement("option");
+    opt.value = cli.nombre;
+    opt.label = cli.catalogo ? `${cli.nombre} (${cli.catalogo})` : cli.nombre;
+    dl.appendChild(opt);
+  });
+});
   const elResultados=$('#resultados'), elTbody=$('#tbody');
   const lblSubtotal=$('#lblSubtotal'), lblTotal=$('#lblTotal'), lblImp=$('#lblImpuestos');
 
@@ -451,36 +464,39 @@ async function corteDelDia(){
     });
   }
 
-  // ==== Clientes ====
-  async function cargarClientes(){
-    clientes=[]; 
-    const dl=document.getElementById("clientesList"); 
-    dl.innerHTML="";
-    const snap=await getDocs(collection(db,"clientes"));
-    snap.forEach(d=>{
-      const c=d.data(); if(c.activo===false) return;
-      const cli={
-        id:d.id, nombre:c.nombre||"", catalogo:c.catalogo||"",
-        ciudad:c.ciudad||"", colonia:c.colonia||"", cp:c.cp||"",
-        estado:c.estado||"", municipio:c.municipio||"", calle:c.calle||"",
-        numExterior:c.numExterior||"", email:c.email||"",
-        rfc:c.rfc||"", uso_cfdi:c.uso_cfdi||"", ocupa_factura: !!c.ocupa_factura 
-      };
-      clientes.push(cli);
-      const opt=document.createElement("option");
-      opt.value=cli.nombre;
-      opt.label=cli.catalogo ? `${cli.nombre} (${cli.catalogo})` : cli.nombre;
-      dl.appendChild(opt);
+// ==== Autocompletado de Clientes ====
+async function buscarClientesFirestore(texto){
+  if(!texto || texto.length < 2) return [];  // solo busca si hay 2+ letras
+  const ref = collection(db,"clientes");
+  const q = query(
+    ref,
+    where("nombre",">=",texto),
+    where("nombre","<",texto + "\uf8ff"),
+    limit(10)
+  );
+  const snap = await getDocs(q);
+  const lista = [];
+  snap.forEach(d=>{
+    const c = d.data();
+    if(c.activo===false) return;
+    lista.push({
+      id:d.id,
+      nombre:c.nombre||"",
+      catalogo:c.catalogo||"",
+      rfc:c.rfc||"",
+      uso_cfdi:c.uso_cfdi||"",
+      ocupa_factura: !!c.ocupa_factura
     });
-  }
+  });
+  return lista;
+}
 
   let clienteSeleccionado=null;
-  elCliente.addEventListener("change",()=>{
-    const v=(elCliente.value||"").toLowerCase();
-    clienteSeleccionado=clientes.find(c=>
-      (c.nombre||"").toLowerCase()===v || (c.catalogo||"").toLowerCase()===v
-    ) || null;
-  });
+ elCliente.addEventListener("change", async ()=>{
+  const texto = elCliente.value.trim();
+  const resultados = await buscarClientesFirestore(texto);
+  clienteSeleccionado = resultados.find(c=>c.nombre===texto) || null;
+});
 
   // ==== Carrito ====
   const money=(n)=>'$'+(Number(n)||0).toFixed(2);
