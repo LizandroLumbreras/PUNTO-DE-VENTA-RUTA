@@ -91,6 +91,19 @@
       background:#0c6cbd; color:#fff; font-size:16px;
     }
     .cam-btn:active{ transform:translateY(-49%); }
+    #loginLogo {
+  width: 120px;                /* tamaño moderado */
+  height: 120px;
+  margin-bottom: 20px;
+  animation: spin360 8s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,.4));
+}
+
+@keyframes spin360 {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
     
     /* ==== Estilos de impresión del ticket ==== */
 @media print {
@@ -164,6 +177,7 @@
 
 <!-- 🔑 LOGIN -->
 <div id="loginScreen">
+   <img id="loginLogo" src="logo_proveedora.webp" alt="Logo La Proveedora">
   <h2>Acceso Ruta de Venta</h2>
   <input id="loginUsuario" type="text" placeholder="Usuario"/>
   <input id="loginPassword" type="password" placeholder="Contraseña"/>
