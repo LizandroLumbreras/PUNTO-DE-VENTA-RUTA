@@ -131,15 +131,17 @@
   /* Ticket estilo recibo térmico */
 #ticket {
   font-family: 'Poppins', sans-serif;
-  width: 58mm;
-  padding: 8px;
-  font-size: 13px;           /* más grande y legible */
+  width: 100%;        /* ocupar todo el ancho disponible */
+  max-width: 80mm;    /* limitar a ancho real del rollo */
+  padding: 4px 0;     /* sin márgenes laterales extra */
+  font-size: 13px;
   line-height: 1.5;
   color: #000;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
   font-weight: 500;
 }
+
 #ticket .t-header {
   text-align: center;
   font-size: 13px;
@@ -924,8 +926,7 @@ async function enviarReporteTelegram(folio, ventas, subtotal, impuestos, total){
   </div>
     <!-- 🔹 Área Ticket Imprimible -->
  <div id="ticketArea" style="display:none;">
-    <div id="ticket" class="ticket" style="width:280px; font-family:'Poppins',sans-serif; font-size:14px; line-height:1.3; color:#000;">
-      
+    <div id="ticket" class="ticket">  
       <!-- Encabezado -->
       <div class="t-header" style="text-align:center; margin:4px 0;">
         <img src="logo_proveedora.webp" alt="Logo" style="max-width:140px; height:auto;">
