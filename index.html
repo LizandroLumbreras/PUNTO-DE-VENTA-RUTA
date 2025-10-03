@@ -2,28 +2,168 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>POS – Ruta de Venta</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
-    :root{ --azul:#00416A; --resalte:#0c6cbd; --ok:#1e8e3e; --bg-grad:linear-gradient(to right,#00416A,#E4E5E6);}
-    body{margin:0;font-family:'Poppins',sans-serif;background:var(--bg-grad);}
-    header{background:#00416A;color:#fff;padding:10px;display:flex;justify-content:center;align-items:center;font-weight:700}
+    :root{
+      --azul:#00416A; --resalte:#0c6cbd; --ok:#1e8e3e; --bg-grad:linear-gradient(to right,#00416A,#E4E5E6);
+      --card: rgba(255,255,255,.9); --muted:rgba(0,0,0,.55); --shadow:0 6px 18px rgba(0,0,0,.18);
+      --radius:14px; --radius-sm:10px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:'Poppins',system-ui,Arial; color:#111; background:var(--bg-grad);
+      display:flex; flex-direction:column; -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;
+    }
+
+    header{
+      position:sticky; top:0; z-index:50;
+      background:rgba(0,0,0,.6);
+      color:#fff;
+      padding:10px 14px;
+      display:flex; justify-content:center; align-items:center; gap:8px;
+      font-weight:700; font-size:18px;
+      backdrop-filter:saturate(120%) blur(4px);
+      height:50px;
+    }
+    header img{ height:75px; object-fit:contain; }
+
+    .wrap{flex:1; padding:12px; display:flex; flex-direction:column; gap:12px; max-width:720px; margin:0 auto}
+
+    .controls{ display:flex; flex-direction:column; gap:10px; }
+    .field{
+      display:flex; gap:8px; background:rgba(255,255,255,.12); padding:10px; border-radius:var(--radius-sm);
+      align-items:center; backdrop-filter:blur(2px);
+    }
+    .field label{min-width:78px; color:#fff; font-size:13px}
+    .field input{ flex:1; padding:10px 12px; border:none; border-radius:8px; font-size:15px; background:#fff; outline:none; }
+
+    .searchbox{ position:relative; z-index:300; }
+    .search-results{
+      position:absolute; left:90px; right:10px; top:calc(100% + 6px);
+      background:#fff; border-radius:12px; box-shadow:var(--shadow);
+      max-height:260px; overflow:auto; display:none; z-index:310;
+    }
+    .result-item{ padding:10px 12px; cursor:pointer; display:flex; justify-content:space-between; gap:8px }
+    .result-item small{ color:var(--muted) }
+    .result-item:hover{ background:#f2f4f7 }
+
+    .card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+
+    .table-wrap{ max-height:260px; overflow:auto; }
+    table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+    thead th{ background:var(--azul); color:#fff; padding:10px; font-size:13px; position:sticky; top:0; z-index:100; }
+    thead th:nth-child(1){ width:55%; text-align:left; }
+    thead th:nth-child(2){ width:15%; text-align:center; }
+    thead th:nth-child(3){ width:20%; text-align:right; }
+    thead th:nth-child(4){ width:10%; text-align:center; }
+    td.del-col{ text-align:center; }
+    td.del-col .del{
+      background:#e74c3c; color:#fff; border:none; border-radius:50%;
+      width:22px; height:22px; font-size:14px; line-height:20px; cursor:pointer;
+    }
+    td.del-col .del:hover{ background:#c0392b; }
+
+    .totals{ display:flex; flex-direction:column; gap:6px; padding:12px 14px; background:#fff; }
+    .row{ display:flex; justify-content:space-between; align-items:center; font-size:15px }
+    .row.muted{ color:var(--muted) }
+    .row.big{ font-weight:700; font-size:18px }
+
+    .actions{ padding:6px 0 12px }
+    .btn{
+      width:100%; border:none; padding:14px; border-radius:12px; font-size:18px; font-weight:700; color:#fff;
+      background:linear-gradient(180deg,var(--resalte),#094d85); box-shadow:var(--shadow); cursor:pointer;
+    }
+    .btn:active{ transform:translateY(1px) }
+    #btnCorte{ background:linear-gradient(180deg,#1e8e3e,#146329); margin-top:10px; }
+
+    /* Login */
     #loginScreen{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#00416A;color:#fff}
     #loginScreen input{padding:10px;border-radius:8px;margin:5px;border:none}
     #loginMsg{color:#fbb;border-radius:8px;margin-top:8px}
-    .btn{padding:10px 20px;border:none;border-radius:10px;background:#0c6cbd;color:#fff;font-weight:600;cursor:pointer}
-    .wrap{padding:12px;max-width:720px;margin:auto}
-    .card{background:#fff;border-radius:12px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,.2);margin-top:12px}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:8px;border-bottom:1px solid #ddd}
-    th{background:#00416A;color:#fff}
-    .actions button{margin-top:10px;width:100%;padding:12px;font-weight:700}
+
+    .searchbox{ position:relative; }
+    .cam-btn{
+      position:absolute; right:14px; top:50%; transform:translateY(-50%);
+      border:none; padding:8px 10px; border-radius:10px; cursor:pointer;
+      background:#0c6cbd; color:#fff; font-size:16px;
+    }
+    .cam-btn:active{ transform:translateY(-49%); }
+    
+    /* ==== Estilos de impresión del ticket ==== */
+@media print {
+  body * {
+    visibility: hidden;   /* Oculta todo */
+  }
+  #ticketArea, #ticketArea * {
+    visibility: visible;  /* Solo muestra ticket */
+  }
+  #ticketArea {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Ticket estilo recibo térmico */
+  #ticket {
+    font-family: monospace, 'Poppins', sans-serif;
+    width: 58mm;            /* ajusta a 58mm o 80mm */
+    padding: 5px;
+    font-size: 12px;
+    line-height: 1.3;
+    color: #000;
+  }
+
+  #ticket .t-header {
+    text-align: center;
+    font-size: 12px;
+  }
+  #ticket .t-core {
+    font-size: 11px;
+    margin: 2px 0;
+  }
+  #ticket .t-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin: 1px 0;
+  }
+  #ticket .t-row .t-desc {
+    flex: 1;
+    text-align: left;
+  }
+  #ticket .t-row .t-imp {
+    min-width: 60px;
+    text-align: right;
+  }
+  #ticket .t-totals {
+    margin-top: 5px;
+  }
+  #ticket hr {
+    border: none;
+    border-top: 1px dashed #000;
+    margin: 4px 0;
+  }
+  #ticket .t-thanks {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 11px;
+  }
+
+  /* Quita botones o colores web */
+  button, .btn, header, .actions, #loginScreen {
+    display: none !important;
+  }
+}
   </style>
 </head>
 <body>
 
-<!-- Login -->
+<!-- 🔑 LOGIN -->
 <div id="loginScreen">
   <h2>Acceso Ruta de Venta</h2>
   <input id="loginUsuario" type="text" placeholder="Usuario"/>
@@ -32,202 +172,633 @@
   <div id="loginMsg"></div>
 </div>
 
-<!-- POS -->
+<!-- 📦 POS -->
 <div id="posApp" style="display:none;">
   <header>
     <span>POS – Ruta de Venta</span>
+    <img src="logo_proveedora.webp" alt="Logo">
   </header>
 
   <main class="wrap">
-    <div class="card">
-      <label>Cliente</label>
-      <input id="cliente" list="clientesList" type="text" placeholder="Nombre del cliente"/>
-      <datalist id="clientesList"></datalist>
-    </div>
-    <div class="card">
-      <label>Buscar producto</label>
-      <input id="buscador" type="text" placeholder="Escribe código o nombre y Enter"/>
-    </div>
+    <section class="controls">
+      <div class="field">
+        <label>Cliente</label>
+        <input id="cliente" list="clientesList" type="text" placeholder="Nombre del cliente"/>
+        <datalist id="clientesList"></datalist>
+      </div>
 
-    <div class="card">
-      <table>
-        <thead><tr><th>Producto</th><th>Cant.</th><th>Importe</th><th></th></tr></thead>
-        <tbody id="tbody"></tbody>
-      </table>
-      <div><b>Total:</b> <span id="lblTotal">$0.00</span></div>
-    </div>
+      <div class="field searchbox">
+        <label>Buscar</label>
+        <input id="buscador" type="text" placeholder="Escribe o escanea código…">
+        <button id="btnCam" class="cam-btn" type="button">📷</button>
+        <div id="resultados" class="search-results"></div>
+      </div>
 
-    <div class="actions">
-      <button id="btnCobrar" class="btn">Cobrar</button>
-      <button id="btnCorte" class="btn" style="background:#1e8e3e">Corte del día</button>
-    </div>
+      <div class="field">
+        <label>Cantidad</label>
+        <input id="cantidadInput" type="number" step="0.01" min="0.01" value="1">
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Cant.</th>
+              <th>Importe</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="totals">
+        <div class="row muted"><span>Subtotal</span><span id="lblSubtotal">$0.00</span></div>
+        <div class="row muted"><span>Impuestos</span><span id="lblImpuestos">$0.00</span></div>
+        <div class="row big"><span>Total</span><span id="lblTotal">$0.00</span></div>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button class="btn" id="btnCobrar">Cobrar</button>
+      <button class="btn" id="btnCorte">Corte del día</button>
+      <button class="btn" id="btnReimprimir" style="margin-top:10px; background:linear-gradient(180deg,#6b7280,#374151);">
+        🧾 Reimprimir ticket
+      </button>
+    </section>
   </main>
 </div>
-  
 <script type="module">
-import { 
-  initializeApp 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, setDoc, serverTimestamp, runTransaction, doc,
+    getDocs, getDoc, query, where, orderBy, Timestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import { 
-  getFirestore, collection, getDocs, query, where, addDoc, 
-  serverTimestamp, runTransaction, doc, Timestamp 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  // ==== Configuración Firebase ====
+  const firebaseConfig = {
+    apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
+    authDomain: "inventariopv-643f1.firebaseapp.com",
+    projectId: "inventariopv-643f1",
+    storageBucket: "inventariopv-643f1.appspot.com",
+    messagingSenderId: "96242533231",
+    appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
 
-// ==== Configuración Firebase ====
-const firebaseConfig = {
-  apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
-  authDomain: "inventariopv-643f1.firebaseapp.com",
-  projectId: "inventariopv-643f1",
-  storageBucket: "inventariopv-643f1.appspot.com",
-  messagingSenderId: "96242533231",
-  appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+  // ==== Variables globales ====
+  let USUARIO_LOGUEADO = null;
+  let rutaId           = null;
+  let carrito          = [];
+  let clientes         = [];
+  let catalogo         = [];
+  const codeIndex      = new Map();
+  const $ = (s)=>document.querySelector(s);
 
-// ==== Variables globales ====
-let USUARIO_LOGUEADO=null;
-let carrito=[];
-const $=s=>document.querySelector(s);
+  const elCliente=$('#cliente'), elBuscador=$('#buscador'), elCant=$('#cantidadInput');
+  const elResultados=$('#resultados'), elTbody=$('#tbody');
+  const lblSubtotal=$('#lblSubtotal'), lblTotal=$('#lblTotal'), lblImp=$('#lblImpuestos');
 
-// ==== Generador de folios ====
-async function getNextFolio(rutaId){
-  const ref = doc(db,"consecutivos",rutaId);
-  const folio = await runTransaction(db,async(tx)=>{
-    const snap = await tx.get(ref);
-    if(!snap.exists()){ tx.set(ref,{valor:1}); return 1; }
-    const val=(snap.data().valor||0)+1;
-    tx.update(ref,{valor:val});
-    return val;
-  });
-  return `V-${String(folio).padStart(6,"0")}`;
-}
-
-// ==== Catálogo de productos ====
-let catalogo=[]; 
-const codeIndex=new Map();
-
-async function cargarCatalogo(){
-  catalogo=[]; codeIndex.clear();
-  const snap=await getDocs(collection(db,"productos"));
-  snap.forEach(d=>{
-    const x=d.data();
-    if(x.activo===false) return;
-    const prod={
-      id:d.id,
-      nombre:x.concepto||"SIN NOMBRE",
-      codigo:(x.codigoBarra||"").toString(),
-      precio:Number(x.precioPublico||0)
-    };
-    catalogo.push(prod);
-    if(prod.codigo) codeIndex.set(prod.codigo,prod.id);
-  });
-}
-(async()=>{ await cargarCatalogo(); })();
-
-// ==== Clientes ====
-async function cargarClientes(){
-  const dl=document.getElementById("clientesList");
-  dl.innerHTML="";
-  const snap=await getDocs(collection(db,"clientes"));
-  snap.forEach(d=>{
-    const c=d.data();
-    if(c.activo===false) return;
-    const opt=document.createElement("option");
-    opt.value=c.nombre;
-    dl.appendChild(opt);
-  });
-}
-(async()=>{ await cargarClientes(); })();
-
-// ==== Login ====
-async function loginUsuario(){
-  const u=$("#loginUsuario").value.trim(), p=$("#loginPassword").value.trim();
-  const msg=$("#loginMsg"); msg.textContent="Verificando...";
-  try{
-    const ref=collection(db,"usuarios_ruta");
-    const q=query(ref,where("usuario","==",u),where("password","==",p),where("activo","==",true));
-    const snap=await getDocs(q);
-    if(snap.empty){ msg.textContent="Usuario o contraseña incorrectos"; return;}
-    const data=snap.docs[0].data();
-    USUARIO_LOGUEADO={id:snap.docs[0].id,...data};
-    $("#loginScreen").style.display="none"; $("#posApp").style.display="block";
-  }catch(e){ msg.textContent="Error de conexión"; console.error(e);}
-}
-$("#btnLogin").onclick=loginUsuario;
-
-// ==== Render carrito ====
-function render(){
-  const tbody=$("#tbody"); tbody.innerHTML="";
-  let total=0;
-  carrito.forEach((it,i)=>{
-    total+=it.importe;
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${it.nombre}</td><td>${it.cantidad}</td><td>$${it.importe.toFixed(2)}</td><td><button>✕</button></td>`;
-    tr.querySelector("button").onclick=()=>{carrito.splice(i,1);render();};
-    tbody.appendChild(tr);
-  });
-  $("#lblTotal").textContent="$"+total.toFixed(2);
-}
-
-// ==== Buscador de productos ====
-$("#buscador").addEventListener("keydown", e => {
-  if(e.key === "Enter"){
-    const val = $("#buscador").value.trim().toLowerCase();
-
-let resultados = catalogo.filter(p => (p.codigo || "").toLowerCase() === val);
-
-if(resultados.length === 0){
-  resultados = catalogo.filter(p => {
-    const nombre = (p.nombre || "").toLowerCase();
-    const codigo = (p.codigo || "").toLowerCase();
-    return nombre.includes(val) || codigo.includes(val);
-  });
-}
-    if(resultados.length > 0){
-      resultados.forEach(prod=>{
-        const existente = carrito.find(p=>p.nombre===prod.nombre);
-        if(existente){
-          existente.cantidad += 1;
-          existente.importe = existente.cantidad * prod.precio;
-        } else {
-          carrito.push({nombre:prod.nombre,cantidad:1,importe:prod.precio});
-        }
-      });
+  // ==== Login ====
+  async function loginUsuario(){
+    const u=$("#loginUsuario").value.trim(), p=$("#loginPassword").value.trim();
+    const msg=$("#loginMsg"); msg.textContent="Verificando...";
+    try{
+      const ref=collection(db,"usuarios_ruta");
+      const q=query(ref,where("usuario","==",u),where("password","==",p),where("activo","==",true));
+      const snap=await getDocs(q);
+      if(snap.empty){ msg.textContent="Usuario o contraseña incorrectos"; return;}
+      const data=snap.docs[0].data();
+      USUARIO_LOGUEADO={id:snap.docs[0].id,...data};
+      rutaId = data.rutaId; // ruta depende del usuario
+      $("#loginScreen").style.display="none"; $("#posApp").style.display="block";
+      await cargarCatalogoDesdeFirestore();
+      await cargarClientes();
       render();
-    } else { 
-      alert("Producto no encontrado"); 
-    }
-
-    $("#buscador").value = "";
+      await sincronizarVentasPendientes();
+    }catch(e){ msg.textContent="Error de conexión"; console.error(e);}
   }
-});
+  $("#btnLogin").onclick=loginUsuario;
 
+  // ==== IndexedDB helper (ventas offline) ====
+  function openLocalDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('posDB', 1);
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('ventasPendientes')) {
+          db.createObjectStore('ventasPendientes', { keyPath: 'folio' });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror  = () => reject(request.error);
+    });
+  }
 
-// ==== Corte del día ====
-async function corteDelDia(){
-  if(!USUARIO_LOGUEADO){alert("No logueado");return;}
-  
-  const hoy=new Date();
-  const inicio=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),0,0,0);
-  const fin=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),23,59,59);
+  async function getVentasPendientes() {
+    const db = await openLocalDB();
+    return new Promise((resolve, reject) => {
+      const tx  = db.transaction('ventasPendientes', 'readonly');
+      const req = tx.objectStore('ventasPendientes').getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror   = () => reject(req.error);
+    });
+  }
 
-  const ventasRef=collection(db,"rutas_venta",USUARIO_LOGUEADO.rutaId,"ventas");
-  const q=query(
-    ventasRef,
-    where("fecha",">=",Timestamp.fromDate(inicio)),
-    where("fecha","<=",Timestamp.fromDate(fin)),
-    where("usuario.id","==",USUARIO_LOGUEADO.id)
-  );
-  const snap=await getDocs(q);
+  async function borrarVentaPendiente(folio) {
+    const db = await openLocalDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('ventasPendientes', 'readwrite');
+      tx.objectStore('ventasPendientes').delete(folio);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror    = () => reject(tx.error);
+    });
+  }
 
-  let total=0, count=0;
-  snap.forEach(d=>{ total+=d.data().total||0; count++; });
+  async function guardarVentaOffline(venta) {
+    const db = await openLocalDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('ventasPendientes', 'readwrite');
+      tx.objectStore('ventasPendientes').put(venta);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror    = () => reject(tx.error);
+    });
+  }
 
-  alert(`📊 Corte del día\nVendedor: ${USUARIO_LOGUEADO.nombre}\nVentas: ${count}\nTotal: $${total.toFixed(2)}`);
+  async function sincronizarVentasPendientes() {
+    try {
+      const pendientes = await getVentasPendientes();
+      if (pendientes.length === 0) return;
+      for (const venta of pendientes) {
+        try {
+          const ref = collection(db, 'rutas_venta', rutaId, 'ventas');
+          await addDoc(ref, venta);
+          await borrarVentaPendiente(venta.folio);
+        } catch (err) {
+          console.error(`❌ Error al subir venta ${venta.folio}:`, err);
+        }
+      }
+    } catch (err) {
+      console.error("Error al sincronizar ventas pendientes:", err);
+    }
+  }
+  window.addEventListener('online', ()=> { sincronizarVentasPendientes(); });
+
+  // ==== Catálogo ====
+  async function cargarCatalogoDesdeFirestore(){
+    catalogo=[]; codeIndex.clear();
+    const prodSnap=await getDocs(collection(db,'productos'));
+    prodSnap.forEach(d=>{
+      const x=d.data(); if(x.activo===false)return;
+      const prod={id:d.id, nombre:x.concepto||'SIN NOMBRE',
+        codigo:(x.codigoBarra||'').toString(),
+        precioPublico:Number(x.precioPublico||0),
+        ivaTasa:Number(x.ivaTasa||0),
+        iepsTasa:Number(x.iepsTasa||0)};
+      catalogo.push(prod); if(prod.codigo)codeIndex.set(prod.codigo.trim(),prod.id);
+    });
+  }
+
+  // ==== Clientes ====
+  async function cargarClientes(){
+    clientes=[]; 
+    const dl=document.getElementById("clientesList"); 
+    dl.innerHTML="";
+    const snap=await getDocs(collection(db,"clientes"));
+    snap.forEach(d=>{
+      const c=d.data(); if(c.activo===false) return;
+      const cli={
+        id:d.id, nombre:c.nombre||"", catalogo:c.catalogo||"",
+        ciudad:c.ciudad||"", colonia:c.colonia||"", cp:c.cp||"",
+        estado:c.estado||"", municipio:c.municipio||"", calle:c.calle||"",
+        numExterior:c.numExterior||"", email:c.email||"",
+        rfc:c.rfc||"", uso_cfdi:c.uso_cfdi||"", ocupa_factura: !!c.ocupa_factura 
+      };
+      clientes.push(cli);
+      const opt=document.createElement("option");
+      opt.value=cli.nombre;
+      opt.label=cli.catalogo ? `${cli.nombre} (${cli.catalogo})` : cli.nombre;
+      dl.appendChild(opt);
+    });
+  }
+
+  let clienteSeleccionado=null;
+  elCliente.addEventListener("change",()=>{
+    const v=(elCliente.value||"").toLowerCase();
+    clienteSeleccionado=clientes.find(c=>
+      (c.nombre||"").toLowerCase()===v || (c.catalogo||"").toLowerCase()===v
+    ) || null;
+  });
+
+  // ==== Carrito ====
+  const money=(n)=>'$'+(Number(n)||0).toFixed(2);
+  function render(){
+    elTbody.innerHTML="";
+    carrito.forEach(it=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td>${it.nombre}</td><td>${it.cantidad.toFixed(2)}</td><td>${money(it.importe)}</td>
+        <td class="del-col"><button class="del">✕</button></td>`;
+      tr.querySelector('.del').onclick=()=>delItem(it.id);
+      elTbody.appendChild(tr);
+    });
+    const {subtotal,impuestos,total}=calcularTotalesConImpuestosIncluidos();
+    lblSubtotal.textContent=money(subtotal);
+    lblImp.textContent=money(impuestos);
+    lblTotal.textContent=money(total);
+  }
+  function delItem(id){ carrito=carrito.filter(x=>x.id!==id); render(); }
+  function addProduct(prod,cantidad=1){
+    if(!prod)return;
+    const cant=Math.max(0.01,Number(cantidad)||1);
+    const precio=Number(prod.precioPublico||0);
+    const ex=carrito.find(x=>x.id===prod.id);
+    if(ex){ex.cantidad+=cant; ex.importe=ex.cantidad*precio;}
+    else{carrito.push({...prod,cantidad:cant,precioUnit:precio,importe:cant*precio});}
+    render();
+  }
+
+  // ==== Buscador ====
+  function buscarLocal(qraw){
+    const q=(qraw||"").trim(); if(!q)return[];
+    const idByCode=codeIndex.get(q);
+    if(idByCode){const p=catalogo.find(x=>x.id===idByCode); if(p)return[p];}
+    return catalogo.filter(p=>(p.nombre||"").toLowerCase().includes(q.toLowerCase()));
+  }
+  function pintarResultados(hits){
+    elResultados.innerHTML=""; if(hits.length===0){elResultados.style.display="none";return;}
+    elResultados.style.display="block";
+    hits.forEach(p=>{
+      const div=document.createElement("div");
+      div.className="result-item"; div.innerHTML=`<span>${p.nombre}</span><span><small>${p.codigo}</small> ${money(p.precioPublico)}</span>`;
+      div.onclick=()=>{prodSeleccionado=p; elBuscador.value=p.nombre; elResultados.style.display="none"; elCant.focus(); elCant.select();};
+      elResultados.appendChild(div);
+    });
+  }
+
+  let prodSeleccionado=null;
+  elBuscador.addEventListener('input',()=>pintarResultados(buscarLocal(elBuscador.value)));
+  elBuscador.addEventListener('keydown',(ev)=>{
+    if(ev.key==='Enter'){
+      const hits=buscarLocal(elBuscador.value.trim());
+      if(hits.length>=1){
+        prodSeleccionado=hits[0];
+        elResultados.style.display="none";
+        elBuscador.value=hits[0].nombre;
+        elCant.focus(); elCant.select();
+      }
+    }
+  });
+  elCant.addEventListener('keydown',(ev)=>{
+    if(ev.key==='Enter'){
+      if(!clienteSeleccionado){alert('Selecciona un cliente primero.');elCliente.focus();return;}
+      if(!prodSeleccionado){alert('Selecciona un producto.');elBuscador.focus();return;}
+      let cant=parseFloat(elCant.value||'');
+      if(isNaN(cant)||cant<=0){alert('Ingresa cantidad válida.');elCant.focus();return;}
+      addProduct(prodSeleccionado,cant);
+      prodSeleccionado=null; elBuscador.value=''; elCant.value='1'; elBuscador.focus();
+    }
+  });
+  // ==== Totales ====
+  function calcularTotalesConImpuestosIncluidos(){
+    let total=0, impuestos=0;
+    carrito.forEach(it=>{
+      const imp=it.cantidad*it.precioUnit;
+      total+=imp;
+      if(it.ivaTasa>0)impuestos+=(imp*it.ivaTasa)/(1+it.ivaTasa);
+      if(it.iepsTasa>0)impuestos+=(imp*it.iepsTasa)/(1+it.iepsTasa);
+    });
+    const subtotal=total-impuestos;
+    return {subtotal:+subtotal.toFixed(2),impuestos:+impuestos.toFixed(2),total:+total.toFixed(2)};
+  }
+
+  // ==== Modal Cobro ====
+  const modalCobro=document.getElementById('modalCobro');
+  const cobroTotal=document.getElementById('cobroTotal');
+  const metodoPago=document.getElementById('metodoPago');
+  const bloqueEfectivo=document.getElementById('bloqueEfectivo');
+  const montoRecibido=document.getElementById('montoRecibido');
+  const montoCambio=document.getElementById('montoCambio');
+  const notasCobro=document.getElementById('notasCobro');
+
+  function abrirCobro(){
+    if(carrito.length===0){alert('Agrega productos primero');return;}
+    document.body.classList.add('modal-open');
+    const {total}=calcularTotalesConImpuestosIncluidos();
+    cobroTotal.textContent=money(total);
+    montoRecibido.value=''; montoCambio.textContent=money(0);
+    notasCobro.value=''; metodoPago.value='efectivo'; bloqueEfectivo.style.display='block';
+    modalCobro.style.display='flex';
+  }
+  function cerrarCobro(){modalCobro.style.display='none'; document.body.classList.remove('modal-open');}
+  metodoPago.addEventListener('change',()=>{const isCash=metodoPago.value==='efectivo'||metodoPago.value==='mixto'; bloqueEfectivo.style.display=isCash?'block':'none';});
+  montoRecibido.addEventListener('input',()=>{const {total}=calcularTotalesConImpuestosIncluidos(); const recibidoX=parseFloat(montoRecibido.value||'0'); const cambio=Math.max(0,recibidoX-total); montoCambio.textContent=money(cambio);});
+
+  async function getNextFolio(db){
+    const ref=doc(db,'consecutivos',rutaId);
+    const folio=await runTransaction(db,async(tx)=>{const snap=await tx.get(ref); if(!snap.exists()){tx.set(ref,{valor:1,actualizado:serverTimestamp()}); return 1;} const actual=Number(snap.data().valor||0)+1; tx.update(ref,{valor:actual,actualizado:serverTimestamp()}); return actual;});
+    return `RV-${String(folio).padStart(6,'0')}`;
+  }
+
+  // ==== Guardar venta ====
+  async function guardarVentaEnFirestore(venta) {
+    try {
+      const ventaLimpia = structuredClone(venta);
+      ventaLimpia.fecha = serverTimestamp();
+      const ref = collection(db, "rutas_venta", rutaId, "ventas");
+      const docRef = await addDoc(ref, ventaLimpia);
+      return docRef.id;
+    } catch (err) {
+      console.error("❌ Error guardando venta en Firestore:", err);
+      await guardarVentaOffline(venta);
+      return null;
+    }
+  }
+
+  async function confirmarCobro(){
+    try {
+      const {subtotal,impuestos,total}=calcularTotalesConImpuestosIncluidos();
+      const clienteTxt=elCliente.value||'Mostrador';
+      const metodo=metodoPago.value;
+      const recibido=parseFloat(montoRecibido.value||'0');
+      if((metodo==='efectivo'||metodo==='mixto') && recibido<total){alert('Pago insuficiente'); return;}
+      const cambio=Math.max(0,recibido-total);
+      const notas=(notasCobro.value||'').trim();
+      const folio     = await getNextFolio(db);
+      const fecha     = new Date();
+      const fechaTxt  = fecha.toLocaleString();
+      const venta = {
+        folio, rutaId, fecha: serverTimestamp(), fecha_txt: fechaTxt,
+        cliente: clienteTxt, cliente_info: clienteSeleccionado || null,
+        atendio: USUARIO_LOGUEADO?.nombre||'',
+        metodo_pago: metodo,
+        recibido: (metodo==='efectivo'||metodo==='mixto') ? recibido : 0,
+        cambio:   (metodo==='efectivo'||metodo==='mixto') ? cambio   : 0,
+        subtotal, impuestos, total, notas,
+        detalle: carrito.map(it=>({id: it.id,nombre: it.nombre,cantidad: it.cantidad,precio_unit: it.precioUnit,importe: it.importe}))
+      };
+      const docId = await guardarVentaEnFirestore(venta);
+      rellenarTicket({...venta,fecha:fecha}); imprimirTicketEstilado();
+      carrito=[]; render(); cerrarCobro();
+    } catch(err){ console.error("Error en confirmarCobro:", err); alert('Error guardando venta'); }
+  }
+
+  // ==== Ticket ====
+  function rellenarTicket(venta){
+    document.getElementById('tFolio').textContent = `Folio: ${venta.folio}`;
+    document.getElementById('tFecha').textContent = venta.fecha_txt || '';
+    document.getElementById('tAtendio').textContent = venta.atendio || '';
+    document.getElementById('tCliente').textContent = `Cliente: ${venta.cliente||'Mostrador'}`;
+    const tLineas=document.getElementById('tLineas'); tLineas.innerHTML='';
+    (venta.detalle||[]).forEach(it=>{
+      const fila=document.createElement('div');
+      fila.className='t-row';
+      fila.innerHTML=`<span class="t-desc">${it.cantidad.toFixed(2)} ${it.nombre}</span><span class="t-imp">${money(it.importe)}</span>`;
+      tLineas.appendChild(fila);
+    });
+    document.getElementById('tSubtotal').textContent  = money(venta.subtotal||0);
+    document.getElementById('tImpuestos').textContent = money(venta.impuestos||0);
+    document.getElementById('tTotal').textContent     = money(venta.total||0);
+    document.getElementById('tMetodo').textContent=venta.metodo_pago||"—";
+    if(venta.metodo_pago==='efectivo'||venta.metodo_pago==='mixto'){
+      document.getElementById('tRecibidoRow').style.display='block';
+      document.getElementById('tRecibido').textContent=money(venta.recibido||0);
+      document.getElementById('tCambio').textContent=money(venta.cambio||0);
+    } else document.getElementById('tRecibidoRow').style.display='none';
+    document.getElementById('tNotas').textContent=venta.notas||'';
+  }
+
+function imprimirTicketEstilado(){
+  const ticket = document.getElementById('ticketArea');
+  ticket.style.display = 'block';     // mostrar antes de imprimir
+  window.print();
+  ticket.style.display = 'none';      // ocultar otra vez después
 }
-$("#btnCorte").onclick=corteDelDia;
+
+  // ==== Reimpresión ====
+  const modalReimp=document.getElementById('modalReimp');
+  const btnReimprimir=document.getElementById('btnReimprimir');
+  const btnCerrarReimp=document.getElementById('btnCerrarReimp');
+  const btnBuscarTickets=document.getElementById('btnBuscarTickets');
+  const filtroFolio=document.getElementById('filtroFolio');
+  const filtroFecha=document.getElementById('filtroFecha');
+  const listaTickets=document.getElementById('listaTickets');
+  const lblPagina=document.getElementById('lblPagina');
+  let _tickets=[],_pagina=1; const _porPag=10;
+
+  function abrirReimp(){ document.body.classList.add('modal-open'); modalReimp.style.display='flex'; _pagina=1; buscarTickets(); }
+  function cerrarReimp(){ modalReimp.style.display='none'; document.body.classList.remove('modal-open'); }
+
+  btnReimprimir.addEventListener('click', abrirReimp);
+  btnCerrarReimp.addEventListener('click', cerrarReimp);
+
+  async function buscarTickets(){
+    listaTickets.innerHTML="Buscando...";
+    const ventasRef=collection(db,'rutas_venta',rutaId,'ventas');
+    let qv=query(ventasRef, orderBy('fecha','desc'));
+    const snap=await getDocs(qv);
+    _tickets=[];
+    snap.forEach(s=>{ const v=s.data(); _tickets.push({id:s.id,...v}); });
+    renderListaTickets();
+  }
+
+  function renderListaTickets(){
+    listaTickets.innerHTML="";
+    const ini=(_pagina-1)*_porPag, fin=ini+_porPag;
+    const page=_tickets.slice(ini,fin);
+    lblPagina.textContent=`${_pagina}/${Math.ceil(_tickets.length/_porPag)||1}`;
+    page.forEach(t=>{
+      const row=document.createElement('div');
+      row.innerHTML=`
+        <div><b>${t.folio}</b> – ${t.cliente||'Mostrador'} – ${money(t.total)}</div>
+        <button class="btn" data-id="${t.id}">Imprimir</button>`;
+      listaTickets.appendChild(row);
+    });
+  }
+  listaTickets.addEventListener('click',async(e)=>{
+    const btn=e.target.closest('button[data-id]'); if(!btn)return;
+    const id=btn.getAttribute('data-id');
+    const ref=doc(db,'rutas_venta',rutaId,'ventas',id); const snap=await getDoc(ref);
+    if(snap.exists()){ rellenarTicket(snap.data()); imprimirTicketEstilado(); cerrarReimp(); }
+  });
+
+  // ==== Botones ====
+  document.getElementById('btnCobrar').onclick=abrirCobro;
+  document.getElementById('btnCancelarCobro').onclick=cerrarCobro;
+  document.getElementById('btnConfirmarCobro').onclick=confirmarCobro;
+  // ==== Corte del día ====
+  async function corteDelDia(){
+    if(!USUARIO_LOGUEADO){alert("No logueado");return;}
+
+    const hoy=new Date();
+    const inicio=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),0,0,0);
+    const fin=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),23,59,59);
+
+    const ventasRef=collection(db,"rutas_venta",rutaId,"ventas");
+    const qv=query(
+      ventasRef,
+      where("fecha",">=",Timestamp.fromDate(inicio)),
+      where("fecha","<=",Timestamp.fromDate(fin)),
+      where("atendio","==",USUARIO_LOGUEADO.nombre)
+    );
+    const snap=await getDocs(qv);
+
+    let total=0, count=0;
+    snap.forEach(d=>{ total+=d.data().total||0; count++; });
+
+    alert(`📊 Corte del día\nVendedor: ${USUARIO_LOGUEADO.nombre}\nVentas: ${count}\nTotal: $${total.toFixed(2)}`);
+
+    // Enviar reporte a Telegram (opcional)
+    enviarReporteTelegram(count,total);
+  }
+  $("#btnCorte").onclick=corteDelDia;
+
+  // ==== Telegram ====
+  async function enviarReporteTelegram(ventas,total){
+    try{
+      const token="TU_TOKEN_TELEGRAM";
+      const chatId="TU_CHAT_ID";
+      const mensaje=`📊 Corte del día\n👤 ${USUARIO_LOGUEADO.nombre}\n🛒 Ventas: ${ventas}\n💵 Total: $${total.toFixed(2)}`;
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({chat_id:chatId,text:mensaje})
+      });
+    }catch(e){ console.error("Error enviando a Telegram:",e);}
+  }
 </script>
+    <!-- 🔹 Modal de Cobro -->
+  <div id="modalCobro" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1200; align-items:center; justify-content:center;">
+    <div class="modal-card" style="width:min(420px,92vw); background:#fff; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.25); overflow:hidden;">
+      <div class="modal-h" style="padding:12px 16px; background:#0c6cbd; color:#fff; font-weight:700;">Cobro</div>
+      <div class="modal-b" style="padding:14px 16px; display:flex; flex-direction:column; gap:10px;">
+        <div class="row big" style="justify-content:space-between">
+          <span>Total a pagar:</span>
+          <span id="cobroTotal">$0.00</span>
+        </div>
+
+        <label for="metodoPago">Método de pago</label>
+        <select id="metodoPago">
+          <option value="efectivo">Efectivo</option>
+          <option value="tarjeta">Tarjeta</option>
+          <option value="transferencia">Transferencia</option>
+          <option value="mixto">Mixto</option>
+        </select>
+
+        <div id="bloqueEfectivo">
+          <label for="montoRecibido">Monto recibido</label>
+          <input id="montoRecibido" type="number" step="0.01" min="0">
+          <div class="row" style="justify-content:space-between">
+            <span>Cambio:</span>
+            <span id="montoCambio">$0.00</span>
+          </div>
+        </div>
+
+        <label for="notasCobro">Notas</label>
+        <textarea id="notasCobro" rows="2" style="resize:none"></textarea>
+
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <button class="btn" id="btnCancelarCobro" style="background:#aaa;">Cancelar</button>
+          <button class="btn" id="btnConfirmarCobro">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔹 Modal Reimpresión de Tickets -->
+  <div id="modalReimp" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1300; align-items:center; justify-content:center;">
+    <div class="modal-card" style="width:min(720px,96vw); background:#fff; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.25); overflow:hidden;">
+      <div class="modal-h" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#0c6cbd; color:#fff; font-weight:700;">
+        <span>Reimprimir tickets</span>
+        <button id="btnCerrarReimp" class="btn" style="background:#aaa; width:auto; padding:8px 12px; font-size:14px;">Cerrar</button>
+      </div>
+      <div class="modal-b" style="padding:14px 16px; display:flex; flex-direction:column; gap:10px;">
+        <!-- Filtros -->
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input id="filtroFolio" type="text" placeholder="Buscar por folio o cliente..." style="flex:1; padding:10px; border-radius:10px; border:1px solid #e1e5ea;">
+          <input id="filtroFecha" type="date" style="padding:10px; border-radius:10px; border:1px solid #e1e5ea;">
+          <button id="btnBuscarTickets" class="btn" style="width:auto; padding:10px 12px; font-size:14px;">Buscar</button>
+        </div>
+
+        <!-- Lista -->
+        <div id="listaTickets" style="max-height:50vh; overflow:auto; border:1px solid #e5e7eb; border-radius:12px;">
+          <!-- Items renderizados por JS -->
+        </div>
+
+        <!-- Paginación simple -->
+        <div style="display:flex; gap:8px; justify-content:flex-end; align-items:center; margin-top:10px;">
+          <button id="btnPrevTickets" class="btn" style="width:auto; padding:8px 10px; font-size:14px; background:#64748b;">◀</button>
+          <span id="lblPagina" style="min-width:70px; text-align:center;">1</span>
+          <button id="btnNextTickets" class="btn" style="width:auto; padding:8px 10px; font-size:14px; background:#64748b;">▶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+    <!-- 🔹 Área Ticket Imprimible -->
+  <div id="ticketArea" style="display:none;">
+    <div id="ticket" class="ticket" style="width:280px; font-family:'Poppins',sans-serif; font-size:14px; line-height:1.3; color:#000;">
+      
+      <!-- Encabezado -->
+      <div class="t-header" style="text-align:center; margin:4px 0;">
+        <img src="logo_proveedora.webp" alt="Logo" style="max-width:140px; height:auto;">
+      </div>
+      <div class="t-header" style="text-align:center; font-weight:700;">La Proveedora</div>
+      <div class="t-header" style="text-align:center; font-weight:700;">Ruta de Venta</div>
+      <hr style="border:none; border-top:1px dashed #999; margin:6px 0;">
+
+      <!-- Datos de empresa -->
+      <div class="t-header" style="text-align:center; font-size:12px;">MADERO 690 SUR, CENTRO</div>
+      <div class="t-header" style="text-align:center; font-size:12px;">LINARES, NUEVO LEÓN, 67700</div>
+      <div class="t-header" style="text-align:center; font-size:12px;">RFC: PDD-031204-KL5</div>
+      <div class="t-header" style="text-align:center; font-size:12px;">TEL: (821) 2121805</div>
+      <div class="t-header" style="text-align:center; font-size:12px;">RÉGIMEN GENERAL DE LEY</div>
+      <div class="t-header" style="text-align:center; font-size:12px;">PERSONAS MORALES</div>
+      <hr style="border:none; border-top:1px dashed #999; margin:6px 0;">
+
+      <!-- Folio, fecha, usuario -->
+      <div class="t-core" id="tFolio" style="font-size:12px;"></div>
+      <div class="t-core" id="tFecha" style="font-size:12px;"></div>
+      <div class="t-core" style="font-size:12px;">Atendió: <span id="tAtendio"></span></div>
+      <hr style="border:none; border-top:1px dashed #999; margin:6px 0;">
+
+      <!-- Cliente -->
+      <div class="t-core" id="tCliente" style="font-size:12px;"></div>
+      <div class="t-core" id="tTipoRow" style="display:none; font-size:12px;">Tipo precio: <span id="tTipo"></span></div>
+
+      <!-- Facturación -->
+      <div class="t-core" id="tFacturaRow" style="font-size:12px; display:none;">Factura: <span id="tFacturaVal"></span></div>
+      <div class="t-core" id="tRFCRow" style="display:none; font-size:12px;">RFC: <span id="tRFC"></span></div>
+      <div class="t-core" id="tCFDIRow" style="display:none; font-size:12px;">Uso CFDI: <span id="tCFDI"></span></div>
+
+      <hr style="border:none; border-top:1px dashed #999; margin:6px 0;">
+
+      <!-- Detalle productos -->
+      <div class="t-core" id="tLineas"></div>
+      <hr style="border:none; border-top:1px dashed #999; margin:6px 0;">
+
+      <!-- Totales -->
+      <div class="t-totals t-core" style="font-size:12px; text-align:right;">
+        <div class="row"><span>Subtotal</span> <span id="tSubtotal"></span></div>
+        <div class="row"><span>Impuestos</span> <span id="tImpuestos"></span></div>
+        <div class="row" style="font-weight:700;"><span>Total</span> <span id="tTotal"></span></div>
+      </div>
+      <hr style="border:none; border-top:1px dashed #999; margin:6px 0;">
+
+      <!-- Pago -->
+      <div class="t-core" style="font-size:12px;">Método: <span id="tMetodo"></span></div>
+      <div class="t-core" id="tRecibidoRow" style="font-size:12px;">
+        Pago: <span id="tRecibido"></span> · Cambio: <span id="tCambio"></span>
+      </div>
+
+      <!-- Notas -->
+      <div class="t-core" id="tNotas" style="font-size:12px; margin-top:4px;"></div>
+
+      <!-- Mensaje -->
+      <div class="t-thanks" style="text-align:center; margin-top:8px; font-size:12px;">¡Gracias por su compra!</div>
+    </div>
+  </div>
 </body>
 </html>
+
