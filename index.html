@@ -372,20 +372,20 @@ async function corteDelDia(){
   const inicio = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0);
   const fin    = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59);
 
-  const ventasRef = collection(db,"rutas_venta",rutaId,"ventas");
-  const qv = query(
-    ventasRef,
-    where("fecha",">=",Timestamp.fromDate(inicio)),
-    where("fecha","<=",Timestamp.fromDate(fin)),
-    where("atendio","==",USUARIO_LOGUEADO.nombre),
-    where("cortada","==",false)
-  );
-  const snap = await getDocs(qv);
+const ventasRef = collection(db,"rutas_venta",rutaId,"ventas");
+const qv = query(
+  ventasRef,
+  where("fecha",">=",Timestamp.fromDate(inicio)),
+  where("fecha","<=",Timestamp.fromDate(fin)),
+  where("atendio","==",USUARIO_LOGUEADO.nombre)
+);
+const snap = await getDocs(qv);
 
-  if(snap.empty){
-    alert("No hay ventas para esa fecha o ya fueron cortadas.");
-    return;
-  }
+if(snap.empty){
+  alert("No hay ventas para esa fecha.");
+  return;
+}
+
 let subtotal = 0, ivaTotal = 0, iepsTotal = 0, total = 0, count = 0;
 snap.forEach(d=>{
   const v = d.data();
